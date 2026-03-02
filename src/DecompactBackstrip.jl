@@ -449,15 +449,17 @@ function DecompactBackstrip(strat::StratData, nsims, res; isostasy=true)
             @. ϕ₀ = rand(ϕ₀_dist)
 
             # Propagate these selections to every model layers; all model layers from the same input layer get the same c and ϕ₀ values
-            @inbounds for i = 1:nlayer_input
-                for j = 1:model_nlayer
-                    if subsidence_strat_depths[j+1]>height_inputs[i]
-                        c_highres[j]=c[i]
-                        ϕ₀_highres[j]=ϕ₀[i]
-                        ρg_highres[j]=ρg[i]
-                    end
+            i = 1 # initialize counter through nLayers
+            for j = 1:model_nlayer # loop through model layers
+                while i < nlayer_input && subsidence_strat_depths[j+1]>height_inputs[i+1] # while we haven't gotten to end of input layers AND bottom of model layer is DEEPER than top of next input layer
+                    i += 1 # move to next input layer if bottom model layer > next input layer
                 end
+                # if not at end of input layers AND bottom model layer < top of next input layer, assign properties of model layer as those of current input layer
+                c_highres[j]=c[i]
+                ϕ₀_highres[j]=ϕ₀[i]
+                ρg_highres[j]=ρg[i]
             end
+
 
             # Fill the first column with modern observed values (present-day depths)
             Y[:,1] .= subsidence_strat_depths
