@@ -255,14 +255,15 @@ function DecompactBackstrip(strat::StratData, wd::WaterDepth, sl::SeaLevel, nsim
             @. ϕ₀ = rand(ϕ₀_dist)
 
             # Propagate these selections to every model layers; all model layers from the same input layer get the same c and ϕ₀ values
-            @inbounds for i = 1:nlayer_input
-                for j = 1:model_nlayer
-                    if subsidence_strat_depths[j+1]>height_inputs[i]
-                        c_highres[j]=c[i]
-                        ϕ₀_highres[j]=ϕ₀[i]
-                        ρg_highres[j]=ρg[i]
-                    end
+            @inbounds i = 1 # initialize counter through nLayers
+            for j = 1:model_nlayer # loop through model layers
+                while i < nlayer_input && subsidence_strat_depths[j+1]>height_inputs[i+1] # while we haven't gotten to end of input layers AND bottom of model layer is DEEPER than top of next input layer
+                    i += 1 # move to next input layer if bottom model layer > next input layer
                 end
+                # if not at end of input layers AND bottom model layer < top of next input layer, assign properties of model layer as those of current input layer
+                c_highres[j]=c[i]
+                ϕ₀_highres[j]=ϕ₀[i]
+                ρg_highres[j]=ρg[i]
             end
 
             # Fill the first column with modern observed values (present-day depths)
@@ -334,20 +335,25 @@ function DecompactBackstrip(strat::StratData, wd::WaterDepth, sl::SeaLevel, nsim
             sl_highres[1] = sl_select[1]
 
             # Propagate these selections to every model layers; all model layers from the same input layer get the same paleo water depth / sea level
-            for i = 1:wd_nlayer_input
-                for j = 1:model_nlayer+1
-                    if subsidence_strat_depths[j]>wd_height_inputs[i]
-                        paleo_wd_highres[j]=paleo_wd[i]
-                    end
+
+            i = 1 # initialize counter through wd Layers
+            for j = 1:model_nlayer # loop through model layers
+                while i < wd_nlayer_input && subsidence_strat_depths[j+1]>wd_height_inputs[i+1] # while we haven't gotten to end of wd layers AND bottom of model layer is DEEPER than top of next input wd layer
+                    i += 1 # move to next wd input layer if bottom model layer > next wd input layer
                 end
+                # if not at end of wd input layers AND bottom model layer < top of next wd input layer, assign wd to current model layer 
+                paleo_wd_highres[j]=paleo_wd[i]
             end
-            for i = 1:sl_nlayer_input
-                for j = 1:model_nlayer+1
-                    if subsidence_strat_depths[j]>sl_height_input[i]
-                        sl_highres[j]=sl_select[i]
-                    end
+
+            i = 1 # initialize counter through sl Layers
+            for j = 1:model_nlayer # loop through model layers
+                while i < sl_nlayer_input && subsidence_strat_depths[j+1]>sl_height_input[i+1] # while we haven't gotten to end of sl layers AND bottom of model layer is DEEPER than top of next sl layer
+                    i += 1 # move to next sl layer if bottom model layer > next sl input layer
                 end
+                # if not at end of sl layers AND bottom model layer < top of next sl input layer, assign sl to current model layer 
+                sl_highres[j]=sl_select[i]
             end
+            
 
             # Optional: perform moving average calculations on the MC-sampled, high resolution paleo water depths and eustatic sea levels
             if smoothing
