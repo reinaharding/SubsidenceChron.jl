@@ -255,8 +255,8 @@ function DecompactBackstrip(strat::StratData, wd::WaterDepth, sl::SeaLevel, nsim
             @. ϕ₀ = rand(ϕ₀_dist)
 
             # Propagate these selections to every model layers; all model layers from the same input layer get the same c and ϕ₀ values
-            @inbounds i = 1 # initialize counter through nLayers
-            for j = 1:model_nlayer # loop through model layers
+            i = 1 # initialize counter through nLayers
+            @inbounds for j = 1:model_nlayer # loop through model layers
                 while i < nlayer_input && subsidence_strat_depths[j+1]>height_inputs[i+1] # while we haven't gotten to end of input layers AND bottom of model layer is DEEPER than top of next input layer
                     i += 1 # move to next input layer if bottom model layer > next input layer
                 end
@@ -331,11 +331,8 @@ function DecompactBackstrip(strat::StratData, wd::WaterDepth, sl::SeaLevel, nsim
             sl_highres = Array{Float64,1}(undef, model_nlayer+1)
 
             # Setup this matrix - paleo water depth and sea level for the first (topmost) modeled layer should be the same as the paleo water depth for the first input layer
-            paleo_wd_highres[1] = paleo_wd[1]
-            sl_highres[1] = sl_select[1]
 
             # Propagate these selections to every model layers; all model layers from the same input layer get the same paleo water depth / sea level
-
             i = 1 # initialize counter through wd Layers
             for j = 1:model_nlayer # loop through model layers
                 while i < wd_nlayer_input && subsidence_strat_depths[j+1]>wd_height_inputs[i+1] # while we haven't gotten to end of wd layers AND bottom of model layer is DEEPER than top of next input wd layer
@@ -344,6 +341,7 @@ function DecompactBackstrip(strat::StratData, wd::WaterDepth, sl::SeaLevel, nsim
                 # if not at end of wd input layers AND bottom model layer < top of next wd input layer, assign wd to current model layer 
                 paleo_wd_highres[j]=paleo_wd[i]
             end
+            paleo_wd_highres[end] = paleo_wd[end]
 
             i = 1 # initialize counter through sl Layers
             for j = 1:model_nlayer # loop through model layers
@@ -353,7 +351,7 @@ function DecompactBackstrip(strat::StratData, wd::WaterDepth, sl::SeaLevel, nsim
                 # if not at end of sl layers AND bottom model layer < top of next sl input layer, assign sl to current model layer 
                 sl_highres[j]=sl_select[i]
             end
-            
+            sl_highres[end] = sl_select[end]
 
             # Optional: perform moving average calculations on the MC-sampled, high resolution paleo water depths and eustatic sea levels
             if smoothing
